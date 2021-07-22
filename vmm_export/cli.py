@@ -212,7 +212,7 @@ def raise_for_success(response):
 
 
 def parse_args():
-    p = configargparse.ArgParser(auto_env_var_prefix='VMMEXP_')
+    p = configargparse.ArgParser(auto_env_var_prefix='VME_')
     p.add('-c', '--config', required=False, is_config_file=True,
           help='Path to configuration file.')
     p.add('--username', required=True,

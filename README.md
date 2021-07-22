@@ -43,12 +43,12 @@ vmm-export --help
 
 |Environment (container)|Flag (cli)|Default|Required?|Description|
 |:-|:-|:-|:-|:-|
-|`VMMEXP_USERNAME`|`--username`|None|Yes|The username to use for logging into the DSM.|
-|`VMMEXP_PASSWORD`|`--password`|None|Yes|The password to use for logging into the DSM.|
-|`VMMEXP_DSM_URL`|`--dsm-url`|None|Yes|URL of the DSM, including port, e.g. `192.168.1.100:5000`.|
-|`VMMEXP_PATH`|`--path`|None|Yes|The path to export VMs to, e.g. `/MyShareName/VMM`.|
-|`VMMEXP_CRON`|N/A|`0 0 * * * `|No|(Container only) [Cron expression](https://www.freeformatter.com/cron-expression-generator-quartz.html) to schedule the export. Make sure to set `TZ` if you want this to be evaluated for [a different timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) than `UTC`.|
-|`VMMEXP_WORKERS`|`--workers`|`1`|No|How many VMs should be exported in parallel. Because exporting is a CPU intensive process, you should leave this to `1` unless you have a beefy DSM.|
-|`VMMEXP_EXCLUDE`|`--exclude`|None|No|Comma-separated list of VM names to avoid exporting. By default, `vmm-export` will export all VMs.|
-|`VMMEXP_INCLUDE`|`--include`|None|No|Comma-separated list of VM names to export. `vmm-export` will only export these VMs. **Note:** This takes precedence over the exclude list.|
-|`VMMEXP_LOG_LEVEL`|`--log-level`|`WARNING`|No|Set logging level for `vmm-export`.|
+|`VME_USERNAME`|`--username`|None|Yes|The username to use for logging into the DSM.|
+|`VME_PASSWORD`|`--password`|None|Yes|The password to use for logging into the DSM.|
+|`VME_DSM_URL`|`--dsm-url`|None|Yes|URL of the DSM, including port, e.g. `192.168.1.100:5000`.|
+|`VME_PATH`|`--path`|None|Yes|The path to export VMs to, e.g. `/MyShareName/VMM`.|
+|`VME_CRON`|N/A|`0 0 * * * `|No|(Container only) [Cron expression](https://www.freeformatter.com/cron-expression-generator-quartz.html) to schedule the export. Make sure to set `TZ` if you want this to be evaluated for [a different timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) than `UTC`.|
+|`VME_WORKERS`|`--workers`|`1`|No|How many VMs should be exported in parallel. Because exporting is a CPU intensive process, you should leave this to `1` unless you have a beefy DSM.|
+|`VME_EXCLUDE`|`--exclude`|None|No|Comma-separated list of VM names to avoid exporting. By default, `vmm-export` will export all VMs.|
+|`VME_INCLUDE`|`--include`|None|No|Comma-separated list of VM names to export. `vmm-export` will only export these VMs. **Note:** This takes precedence over the exclude list.|
+|`VME_LOG_LEVEL`|`--log-level`|`WARNING`|No|Set logging level for `vmm-export`.|

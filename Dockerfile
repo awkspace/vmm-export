@@ -24,4 +24,4 @@ RUN apk add --no-cache \
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["/docker-entrypoint.sh"]
 
-ENV VMMEXP_CRON '0 0 * * *'
+ENV VME_CRON '0 0 * * *'
