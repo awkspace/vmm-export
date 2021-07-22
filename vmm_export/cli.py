@@ -135,7 +135,7 @@ async def power_off_vm(session, url, sid, vm):
             '_sid': sid,
             'api': 'SYNO.Virtualization.API.Guest.Action',
             'version': '1',
-            'method': 'poweroff',
+            'method': 'shutdown',
             'guest_name': vm.guest_name
         }
     )
