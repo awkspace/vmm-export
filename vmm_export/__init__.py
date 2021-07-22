@@ -21,11 +21,9 @@ async def dsm_request(session, url, ignore_error=False, **kwargs):
 def log_dsm_response(params, response):
     error_code = response.get('error', {}).get('code')
     if error_code:
-        logger.error(f'Error code {error_code}')
-
         error = dsm_errors['Common'].get(error_code)
         if error:
-            logger.error(f'Reason: {error}')
+            logger.error(f'Error: {error}')
 
         api = params.get('api')
         if api:
@@ -33,6 +31,6 @@ def log_dsm_response(params, response):
                 api = '.'.join(params.get('api', '').split('.')[0:2])
             error = dsm_errors.get(api).get(error_code)
             if error:
-                logger.error(f'Reason: {error}')
+                logger.error(f'Error: {error}')
 
     logger.error(f'Full response from DSM: {json.dumps(response)}')

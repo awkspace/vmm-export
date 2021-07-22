@@ -227,11 +227,11 @@ def report_export_error(vm):
         error_code = vm.export_task.get('data', {}).get('task_info', {}) \
             .get('error')
         if error_code:
-            logger.error(f'Error code {error_code}')
+            logger.error(f'Task failed with error code {error_code}')
             reason = dsm_errors['SYNO.Virtualization.API.Guest.Action'] \
                 .get(error_code)
             if reason:
-                logger.warning(f'Reason: {reason}')
+                logger.warning(f'Error: {reason}')
 
 
 def raise_for_success(response):
