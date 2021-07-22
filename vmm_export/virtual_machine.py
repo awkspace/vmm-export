@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import asyncio
+from vmm_export.cli import dsm_request
 
 
 class VirtualMachine():
@@ -8,7 +9,8 @@ class VirtualMachine():
 
     def __init__(self, raw_info):
         self.data = raw_info
-        self.export_file_exists = False
+        self.export_status = None
+        self.export_task_id = None
 
     def __getattr__(self, name):
         if name in self.data:
@@ -32,5 +34,21 @@ class VirtualMachine():
     async def wait_for_export(self):
         while True:
             await self.wait_for_update()
-            if self.export_file_exists:
+            if self.export_task and self.export_task['data']['finish']:
                 return
+
+    async def update_export_task(self, session, url, sid):
+        if not self.export_task_id:
+            return
+        r = await dsm_request(
+            session,
+            f'{url}/webapi/entry.cgi',
+            params={
+                '_sid': sid,
+                'api': 'SYNO.Virtualization.API.Task.Info',
+                'version': '1',
+                'method': 'get',
+                'task_id': self.export_task_id
+            }
+        )
+        self.export_task = r

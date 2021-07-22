@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-errors = {
-    'Generic': {
+dsm_errors = {
+    'Common': {
         100: 'Unknown error',
         101: 'No parameter of API, method or version',
         102: 'The requested API does not exist',
@@ -19,7 +19,7 @@ errors = {
         403: '2-step verification code required',
         404: 'Failed to authenticate 2-step verification code'
     },
-    'Syno.Virtualization.API.Guest.Action': {
+    'SYNO.Virtualization': {
         401: 'Bad parameter.',
         402: 'Operation failed.',
         403: 'Name conflict.',
@@ -52,5 +52,30 @@ errors = {
         1400: 'The result of image creating is partial success.',
         1600: 'The virtual machine has been successfully edited. However, '
         'errors occurred while reserving the memory or CPU on the HA hosts.'
+    },
+    'SYNO.FileStation': {
+        400: 'Invalid parameter of file operation',
+        401: 'Unknown error of file operation',
+        402: 'System is too busy',
+        403: 'Invalid user for this file operation',
+        404: 'Invalid group for this file operation',
+        405: 'Invalid user and group for this file operation',
+        406: "Can't get user/group information from the account server",
+        407: 'Operation not permitted',
+        408: 'No such file or directory',
+        409: 'Non-supported file system',
+        410: 'Failed to connect to internet-based file system (e.g. CIFS)',
+        411: 'Read-only file system',
+        412: 'Filename too long in non-encrypted file system',
+        413: 'Filename too long in encrypted file system',
+        414: 'File already exists',
+        415: 'Disk quota exceeded',
+        416: 'No space left on device',
+        417: 'Input/output error',
+        418: 'Illegal name or path',
+        419: 'Illegal file name',
+        420: 'Illegal file name on FAT file system',
+        421: 'Device or resource busy',
+        599: 'No such task for this file operation'
     }
 }

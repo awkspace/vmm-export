@@ -4,7 +4,7 @@ import aiohttp
 import asyncio
 import configargparse
 import json
-from vmm_export import logger
+from vmm_export import logger, dsm_request
 from vmm_export.virtual_machine import VirtualMachine
 from vmm_export.dsm_errors import dsm_errors
 
@@ -57,16 +57,6 @@ async def worker(queue):
         queue.task_done()
 
 
-async def dsm_request(session, url, ignore_error=False, **kwargs):
-    async with session.get(url, **kwargs) as raw:
-        response = raw.json(content_type=None)
-        if not ignore_error:
-            if not response['success']:
-                log_response(response)
-                raise RuntimeError('Unexpected error from DSM')
-    return response
-
-
 async def dsm_login(session, url, username, password):
     r = await dsm_request(
             session,
@@ -109,26 +99,14 @@ async def list_vms(session, url, sid):
     return r['data']['guests']
 
 
-async def list_files(session, url, sid, path):
-    r = await dsm_request(
-        session,
-        f'{url}/webapi/entry.cgi',
-        params={
-            '_sid': sid,
-            'api': 'SYNO.FileStation.List',
-            'method': 'list',
-            'version': '2',
-            'folder_path': path
-        }
-    )
-    return r['data']['files']
-
-
 async def check_vm_info(session, url, sid, vms, path):
     while True:
         await asyncio.sleep(5)
         if VirtualMachine.update_futures:
-            await update_vm_info(session, url, sid, vms, path)
+            try:
+                await update_vm_info(session, url, sid, vms, path)
+            except Exception:
+                logger.exception('Error in VM info update task')
 
 
 async def update_vm_info(session, url, sid, vms, path):
@@ -139,13 +117,7 @@ async def update_vm_info(session, url, sid, vms, path):
                 vm.update(vm_data)
                 break
 
-    export_info = await list_files(session, url, sid, path)
-    for f in export_info:
-        for vm in vms:
-            vm.export_file_exists = False
-            if not f['isdir'] and f['path'] == f'{path}/{vm.guest_name}.ova':
-                vm.export_file_exists = True
-                break
+    await vm.update_export_task(session, url, sid)
 
     for future in VirtualMachine.update_futures:
         future.set_result(None)
@@ -191,7 +163,7 @@ async def power_on_vm(session, url, sid, vm):
 
 
 async def start_vm_export(session, url, sid, vm, path):
-    await dsm_request(
+    r = await dsm_request(
         session,
         f'{url}/webapi/entry.cgi',
         params={
@@ -205,6 +177,7 @@ async def start_vm_export(session, url, sid, vm, path):
             'name': vm.guest_name
         }
     )
+    return r['data']['task_id']
 
 
 async def delete_old_export(session, url, sid, vm, path):
@@ -224,17 +197,41 @@ async def delete_old_export(session, url, sid, vm, path):
 async def export_vm(session, url, sid, vm, path):
     initial_status = vm.status
 
+    logger.info(f'[{vm.guest_name}] Deleting old export, if it exists...')
     await delete_old_export(session, url, sid, vm, path)
+
+    logger.info(f'[{vm.guest_name}] Powering off VM...')
     await power_off_vm(session, url, sid, vm)
     await vm.wait_for_status('shutdown')
-    await start_vm_export(session, url, sid, vm, path)
+
+    logger.info(f'[{vm.guest_name}] Starting VM export...')
+    vm.export_task_id = await start_vm_export(session, url, sid, vm, path)
+
+    logger.info(f'[{vm.guest_name}] Waiting for export to finish...')
     await vm.wait_for_export()
+    logger.info(f'[{vm.guest_name}] Export finished')
+    await report_export_error(vm)
 
     if initial_status != 'running':
         return  # Don't restart a VM that wasn't running
 
+    logger.info(f'[{vm.guest_name}] Powering on VM...')
     await power_on_vm(session, url, sid, vm)
     await vm.wait_for_status('running')
+    logger.info(f'[{vm.guest_name}] VM powered on.')
+
+
+def report_export_error(vm):
+    if not vm.export_task.get('data', {}).get('success', False):
+        logger.error(f'Failed exporting {vm.guest_name}.')
+        error_code = vm.export_task.get('data', {}).get('task_info', {}) \
+            .get('error')
+        if error_code:
+            logger.error(f'Error code {error_code}')
+            reason = dsm_errors['SYNO.Virtualization.API.Guest.Action'] \
+                .get(error_code)
+            if reason:
+                logger.warning(f'Reason: {reason}')
 
 
 def raise_for_success(response):
@@ -265,10 +262,3 @@ def parse_args():
     p.add('--log-level', required=False, default='WARNING',
           help='Log verbosity.')
     return p.parse_args()
-
-
-def log_response(response):
-    error_code = response.get('error', {}).get('code')
-    if error_code in dsm_errors['Generic']:
-        logger.error(f'Error: {dsm_errors["Generic"][error_code]}')
-    logger.error(json.dumps(response))
