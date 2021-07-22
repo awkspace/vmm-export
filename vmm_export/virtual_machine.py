@@ -8,6 +8,7 @@ class VirtualMachine():
 
     def __init__(self, raw_info):
         self.data = raw_info
+        self.export_file_exists = False
 
     def __getattr__(self, name):
         if name in self.data:
@@ -26,4 +27,10 @@ class VirtualMachine():
         while True:
             await self.wait_for_update()
             if self.status == status:
+                return
+
+    async def wait_for_export(self):
+        while True:
+            await self.wait_for_update()
+            if self.export_file_exists:
                 return

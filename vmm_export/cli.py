@@ -16,6 +16,7 @@ async def run():
     opts = parse_args()
     logger.setLevel(opts.log_level)
     url = f'http://{opts.dsm_url}'
+    tasks = []
 
     async with aiohttp.ClientSession() as session:
         sid = await dsm_login(session, url, opts.username, opts.password)
@@ -23,8 +24,10 @@ async def run():
         exclude_list = opts.exclude.split(',')
         include_list = opts.include.split(',')
         vms = await get_vms(session, url, sid, exclude_list, include_list)
-        vm_info_task = asyncio.create_task(
-            check_vm_info(session, url, sid, vms))
+
+        task = asyncio.create_task(
+            check_vm_info(session, url, sid, vms, opts.path))
+        tasks.append(task)
 
         queue = asyncio.Queue()
         for vm in vms:
@@ -36,7 +39,6 @@ async def run():
                 'path': opts.path
             })
 
-        tasks = []
         for _ in range(int(opts.workers)):
             task = asyncio.create_task(worker(queue))
             tasks.append(task)
@@ -45,8 +47,6 @@ async def run():
 
         for task in tasks:
             task.cancel()
-
-        vm_info_task.cancel()
 
 
 async def worker(queue):
@@ -85,13 +85,6 @@ async def get_vms(session, url, sid, exclude_list, include_list):
     return vms
 
 
-async def check_vm_info(session, url, sid, vms):
-    while True:
-        await asyncio.sleep(5)
-        if VirtualMachine.update_futures:
-            await update_vm_info(session, url, sid, vms)
-
-
 async def list_vms(session, url, sid):
     async with session.get(
             f'{url}/webapi/entry.cgi',
@@ -107,12 +100,45 @@ async def list_vms(session, url, sid):
         return r['data']['guests']
 
 
-async def update_vm_info(session, url, sid, vms):
+async def list_files(session, url, sid, path):
+    async with session.get(
+            f'{url}/webapi/entry.cgi',
+            params={
+                '_sid': sid,
+                'api': 'SYNO.FileStation.List',
+                'method': 'list',
+                'version': '2',
+                'folder_path': path
+            }
+    ) as raw_response:
+        r = await raw_response.json(content_type=None)
+        raise_for_success(r)
+        return r['data']['files']
+
+
+async def check_vm_info(session, url, sid, vms, path):
+    while True:
+        await asyncio.sleep(5)
+        if VirtualMachine.update_futures:
+            await update_vm_info(session, url, sid, vms, path)
+
+
+async def update_vm_info(session, url, sid, vms, path):
     vm_info = await list_vms(session, url, sid)
     for vm_data in vm_info:
         for vm in vms:
             if vm.guest_id == vm_data['guest_id']:
                 vm.update(vm_data)
+                break
+
+    export_info = await list_files(session, url, sid, path)
+    for f in export_info:
+        for vm in vms:
+            vm.export_file_exists = False
+            if not f['isdir'] and f['path'] == f'{path}/{vm.guest_name}.ova':
+                vm.export_file_exists = True
+                break
+
     for future in VirtualMachine.update_futures:
         future.set_result(None)
     VirtualMachine.update_futures = []
@@ -134,10 +160,6 @@ async def power_off_vm(session, url, sid, vm):
 
 
 async def power_on_vm(session, url, sid, vm):
-    # Guests being exported are still in 'shutdown' status, so there is no
-    # status to wait for. Instead, the most consistent way to wait until they
-    # can start up again is to spam the poweron command until we no longer
-    # receive an error, or we receive an error telling us the VM is already on.
     while True:
         try:
             async with session.get(
@@ -149,14 +171,13 @@ async def power_on_vm(session, url, sid, vm):
                         'method': 'poweron',
                         'guest_name': vm.guest_name
                     },
-                    timeout=60
+                    timeout=10*60
             ) as raw_response:
                 r = await raw_response.json(content_type=None)
                 if r['success']:
                     break
                 elif r['error']['code'] == 904:  # Machine is already running
                     break
-                await asyncio.sleep(60)
         except asyncio.TimeoutError:
             pass
 
@@ -201,6 +222,7 @@ async def export_vm(session, url, sid, vm, path):
     await power_off_vm(session, url, sid, vm)
     await vm.wait_for_status('shutdown')
     await start_vm_export(session, url, sid, vm, path)
+    await vm.wait_for_export()
 
     if initial_status != 'running':
         return  # Don't restart a VM that wasn't running
