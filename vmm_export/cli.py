@@ -223,7 +223,7 @@ async def export_vm(session, url, sid, vm, path):
     logger.info(f'[{vm.guest_name}] VM powered on.')
 
 
-def report_export_error(vm):
+async def report_export_error(vm):
     if not vm.export_task.get('data', {}).get('success', False):
         logger.error(f'Failed exporting {vm.guest_name}.')
         error_code = vm.export_task.get('data', {}).get('task_info', {}) \
