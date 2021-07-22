@@ -8,7 +8,11 @@ from vmm_export import logger
 from vmm_export.virtual_machine import VirtualMachine
 
 
-async def main():
+def main():
+    asyncio.run(run())
+
+
+async def run():
     opts = parse_args()
     logger.setLevel(opts.log_level)
     url = f'http://{opts.dsm_url}'
@@ -233,6 +237,3 @@ def parse_args():
     p.add('--log-level', required=False, default='WARNING',
           help='Log verbosity.')
     return p.parse_args()
-
-
-asyncio.run(main())
