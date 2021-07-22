@@ -25,3 +25,4 @@ ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["/docker-entrypoint.sh"]
 
 ENV VME_CRON '0 0 * * *'
+ENV VME_LOG_LEVEL INFO
