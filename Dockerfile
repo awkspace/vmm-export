@@ -11,6 +11,7 @@ COPY [ \
     "vmm_export/__init__.py", \
     "vmm_export/cli.py", \
     "vmm_export/virtual_machine.py", \
+    "vmm_export/dsm_errors.py", \
     "/app/vmm_export/" \
 ]
 
