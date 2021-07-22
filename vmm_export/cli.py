@@ -19,7 +19,8 @@ async def main():
         exclude_list = opts.exclude.split(',')
         include_list = opts.include.split(',')
         vms = await get_vms(session, url, sid, exclude_list, include_list)
-        asyncio.create_task(check_vm_info(session, url, sid, vms))
+        vm_info_task = asyncio.create_task(
+            check_vm_info(session, url, sid, vms))
 
         queue = asyncio.Queue()
         for vm in vms:
@@ -40,6 +41,8 @@ async def main():
 
         for task in tasks:
             task.cancel()
+
+        vm_info_task.cancel()
 
 
 async def worker(queue):
@@ -111,9 +114,7 @@ async def update_vm_info(session, url, sid, vms):
     VirtualMachine.update_futures = []
 
 
-async def export_vm(session, url, sid, vm, path):
-    initial_status = vm.status
-
+async def power_off_vm(session, url, sid, vm):
     async with session.get(
             f'{url}/webapi/entry.cgi',
             params={
@@ -127,31 +128,12 @@ async def export_vm(session, url, sid, vm, path):
         r = await raw_response.json(content_type=None)
         raise_for_success(r)
 
-    await vm.wait_for_status('shutdown')
 
-    async with session.get(
-        f'{url}/webapi/entry.cgi',
-        params={
-            '_sid': sid,
-            'api': 'SYNO.Virtualization.Guest.Action',
-            'version': '1',
-            'method': 'export',
-            'target_ova_path': path,
-            'ova_mode': '0',
-            'guest_id': vm.guest_id,
-            'name': vm.guest_name
-        }
-    ) as raw_response:
-        r = await raw_response.json(content_type=None)
-        raise_for_success(r)
-
-    if initial_status != 'running':
-        return  # Don't restart a VM that wasn't running
-
+async def power_on_vm(session, url, sid, vm):
     # Guests being exported are still in 'shutdown' status, so there is no
     # status to wait for. Instead, the most consistent way to wait until they
     # can start up again is to spam the poweron command until we no longer
-    # receive an error.
+    # receive an error, or we receive an error telling us the VM is already on.
     while True:
         try:
             async with session.get(
@@ -174,6 +156,52 @@ async def export_vm(session, url, sid, vm, path):
         except asyncio.TimeoutError:
             pass
 
+
+async def start_vm_export(session, url, sid, vm, path):
+    async with session.get(
+        f'{url}/webapi/entry.cgi',
+        params={
+            '_sid': sid,
+            'api': 'SYNO.Virtualization.Guest.Action',
+            'version': '1',
+            'method': 'export',
+            'target_ova_path': path,
+            'ova_mode': '0',
+            'guest_id': vm.guest_id,
+            'name': vm.guest_name
+        }
+    ) as raw_response:
+        r = await raw_response.json(content_type=None)
+        raise_for_success(r)
+
+
+async def delete_old_export(session, url, sid, vm, path):
+    async with session.get(
+            f'{url}/webapi/entry.cgi',
+            params={
+                '_sid': sid,
+                'api': 'SYNO.FileStation.Delete',
+                'version': '2',
+                'method': 'delete',
+                'path': f'{path}/{vm.guest_name}.ova'
+            }
+    ) as raw_response:
+        r = await raw_response.json(content_type=None)
+        raise_for_success(r)
+
+
+async def export_vm(session, url, sid, vm, path):
+    initial_status = vm.status
+
+    await delete_old_export(session, url, sid, vm, path)
+    await power_off_vm(session, url, sid, vm)
+    await vm.wait_for_status('shutdown')
+    await start_vm_export(session, url, sid, vm, path)
+
+    if initial_status != 'running':
+        return  # Don't restart a VM that wasn't running
+
+    await power_on_vm(session, url, sid, vm)
     await vm.wait_for_status('running')
 
 
