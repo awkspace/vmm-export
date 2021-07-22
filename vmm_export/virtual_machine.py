@@ -9,7 +9,7 @@ class VirtualMachine():
 
     def __init__(self, raw_info):
         self.data = raw_info
-        self.export_status = None
+        self.export_task = None
         self.export_task_id = None
 
     def __getattr__(self, name):
