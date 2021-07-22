@@ -50,6 +50,8 @@ async def run():
         for task in tasks:
             task.cancel()
 
+    logger.info('Exports completed.')
+
 
 async def worker(queue):
     while True:
