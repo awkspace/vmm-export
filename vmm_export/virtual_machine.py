@@ -50,9 +50,12 @@ class VirtualMachine():
                 'version': '1',
                 'method': 'get',
                 'task_id': self.export_task_id
-            }
+            },
+            ignore_error=True
         )
-        if r['data']['finish']:
+        export_finished = r.get('data', {}).get('finish')
+        export_task_not_found = r.get('error', {}).get('code') == 1000
+        if export_finished or export_task_not_found:
             self.export_task_id = None
             self.export_finished = True
         self.export_task = r
