@@ -226,6 +226,8 @@ async def export_vm(session, url, sid, vm, path):
 
 
 async def report_export_error(vm):
+    if vm.export_task.get('error', {}).get('code') == 1000:
+        return  # Unable to find task_id, not an export error
     if not vm.export_task.get('data', {}).get('success', False):
         logger.error(f'Failed exporting {vm.guest_name}.')
         error_code = vm.export_task.get('data', {}).get('task_info', {}) \
