@@ -6,6 +6,7 @@ import configargparse
 import json
 from vmm_export import logger
 from vmm_export.virtual_machine import VirtualMachine
+from vmm_export.dsm_errors import dsm_errors
 
 
 def main():
@@ -56,8 +57,19 @@ async def worker(queue):
         queue.task_done()
 
 
+async def dsm_request(session, url, ignore_error=False, **kwargs):
+    async with session.get(url, **kwargs) as raw:
+        response = raw.json(content_type=None)
+        if not ignore_error:
+            if not response['success']:
+                log_response(response)
+                raise RuntimeError('Unexpected error from DSM')
+    return response
+
+
 async def dsm_login(session, url, username, password):
-    async with session.get(
+    r = await dsm_request(
+            session,
             f'{url}/webapi/auth.cgi',
             params={
                 'api': 'SYNO.API.Auth',
@@ -68,10 +80,8 @@ async def dsm_login(session, url, username, password):
                 'format': 'sid',
                 'session': 'vmm_export'
             }
-    ) as raw_response:
-        r = await raw_response.json(content_type=None)
-        raise_for_success(r)
-        return r['data']['sid']
+    )
+    return r['data']['sid']
 
 
 async def get_vms(session, url, sid, exclude_list, include_list):
@@ -86,34 +96,32 @@ async def get_vms(session, url, sid, exclude_list, include_list):
 
 
 async def list_vms(session, url, sid):
-    async with session.get(
-            f'{url}/webapi/entry.cgi',
-            params={
-                '_sid': sid,
-                'api': 'SYNO.Virtualization.API.Guest',
-                'method': 'list',
-                'version': '1'
-            }
-    ) as raw_response:
-        r = await raw_response.json(content_type=None)
-        raise_for_success(r)
-        return r['data']['guests']
+    r = await dsm_request(
+        session,
+        f'{url}/webapi/entry.cgi',
+        params={
+            '_sid': sid,
+            'api': 'SYNO.Virtualization.API.Guest',
+            'method': 'list',
+            'version': '1'
+        }
+    )
+    return r['data']['guests']
 
 
 async def list_files(session, url, sid, path):
-    async with session.get(
-            f'{url}/webapi/entry.cgi',
-            params={
-                '_sid': sid,
-                'api': 'SYNO.FileStation.List',
-                'method': 'list',
-                'version': '2',
-                'folder_path': path
-            }
-    ) as raw_response:
-        r = await raw_response.json(content_type=None)
-        raise_for_success(r)
-        return r['data']['files']
+    r = await dsm_request(
+        session,
+        f'{url}/webapi/entry.cgi',
+        params={
+            '_sid': sid,
+            'api': 'SYNO.FileStation.List',
+            'method': 'list',
+            'version': '2',
+            'folder_path': path
+        }
+    )
+    return r['data']['files']
 
 
 async def check_vm_info(session, url, sid, vms, path):
@@ -145,45 +153,46 @@ async def update_vm_info(session, url, sid, vms, path):
 
 
 async def power_off_vm(session, url, sid, vm):
-    async with session.get(
-            f'{url}/webapi/entry.cgi',
-            params={
-                '_sid': sid,
-                'api': 'SYNO.Virtualization.API.Guest.Action',
-                'version': '1',
-                'method': 'poweroff',
-                'guest_name': vm.guest_name
-            }
-    ) as raw_response:
-        r = await raw_response.json(content_type=None)
-        raise_for_success(r)
+    await dsm_request(
+        session,
+        f'{url}/webapi/entry.cgi',
+        params={
+            '_sid': sid,
+            'api': 'SYNO.Virtualization.API.Guest.Action',
+            'version': '1',
+            'method': 'poweroff',
+            'guest_name': vm.guest_name
+        }
+    )
 
 
 async def power_on_vm(session, url, sid, vm):
     while True:
         try:
-            async with session.get(
-                    f'{url}/webapi/entry.cgi',
-                    params={
-                        '_sid': sid,
-                        'api': 'SYNO.Virtualization.API.Guest.Action',
-                        'version': '1',
-                        'method': 'poweron',
-                        'guest_name': vm.guest_name
-                    },
-                    timeout=10*60
-            ) as raw_response:
-                r = await raw_response.json(content_type=None)
-                if r['success']:
-                    break
-                elif r['error']['code'] == 904:  # Machine is already running
-                    break
+            r = await dsm_request(
+                session,
+                f'{url}/webapi/entry.cgi',
+                params={
+                    '_sid': sid,
+                    'api': 'SYNO.Virtualization.API.Guest.Action',
+                    'version': '1',
+                    'method': 'poweron',
+                    'guest_name': vm.guest_name
+                },
+                timeout=10*60,
+                ignore_error=True
+            )
+            if r['success']:
+                break
+            elif r['error']['code'] == 904:  # Machine is already running
+                break
         except asyncio.TimeoutError:
             pass
 
 
 async def start_vm_export(session, url, sid, vm, path):
-    async with session.get(
+    await dsm_request(
+        session,
         f'{url}/webapi/entry.cgi',
         params={
             '_sid': sid,
@@ -195,24 +204,21 @@ async def start_vm_export(session, url, sid, vm, path):
             'guest_id': vm.guest_id,
             'name': vm.guest_name
         }
-    ) as raw_response:
-        r = await raw_response.json(content_type=None)
-        raise_for_success(r)
+    )
 
 
 async def delete_old_export(session, url, sid, vm, path):
-    async with session.get(
-            f'{url}/webapi/entry.cgi',
-            params={
-                '_sid': sid,
-                'api': 'SYNO.FileStation.Delete',
-                'version': '2',
-                'method': 'delete',
-                'path': f'{path}/{vm.guest_name}.ova'
-            }
-    ) as raw_response:
-        r = await raw_response.json(content_type=None)
-        raise_for_success(r)
+    await dsm_request(
+        session,
+        f'{url}/webapi/entry.cgi',
+        params={
+            '_sid': sid,
+            'api': 'SYNO.FileStation.Delete',
+            'version': '2',
+            'method': 'delete',
+            'path': f'{path}/{vm.guest_name}.ova'
+        }
+    )
 
 
 async def export_vm(session, url, sid, vm, path):
@@ -259,3 +265,10 @@ def parse_args():
     p.add('--log-level', required=False, default='WARNING',
           help='Log verbosity.')
     return p.parse_args()
+
+
+def log_response(response):
+    error_code = response.get('error', {}).get('code')
+    if error_code in dsm_errors['Generic']:
+        logger.error(f'Error: {dsm_errors["Generic"][error_code]}')
+    logger.error(json.dumps(response))
