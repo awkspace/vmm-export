@@ -15,12 +15,7 @@ DSM.
 ### 1. Create a new user.
 
 Navigate to `Control Panel` > `User` and create a new user that will handle the
-automatic export. Make sure it has access to Virtual Machine Manager and the
-share you’ll be exporting the VMs to.
-
-If the new user is not an admin account, you’ll also need to add it as a manager
-to the VMs you wish to export: `Virtual Machine Manager` > `Virtual Machine` >
-Select a machine > `Action` > `Edit` > `Permissions`.
+automatic export. Add this user to the default administrators group.
 
 ### 2. Add the Docker image.
 
