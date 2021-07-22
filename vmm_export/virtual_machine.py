@@ -11,6 +11,7 @@ class VirtualMachine():
         self.data = raw_info
         self.export_task = None
         self.export_task_id = None
+        self.export_finished = False
 
     def __getattr__(self, name):
         if name in self.data:
@@ -34,7 +35,7 @@ class VirtualMachine():
     async def wait_for_export(self):
         while True:
             await self.wait_for_update()
-            if self.export_task and self.export_task['data']['finish']:
+            if self.export_finished:
                 return
 
     async def update_export_task(self, session, url, sid):
@@ -51,4 +52,7 @@ class VirtualMachine():
                 'task_id': self.export_task_id
             }
         )
+        if r['data']['finish']:
+            self.export_task_id = None
+            self.export_finished = True
         self.export_task = r
