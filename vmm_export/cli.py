@@ -24,6 +24,7 @@ async def run():
 
         exclude_list = opts.exclude.split(',')
         include_list = opts.include.split(',')
+        logger.info('Retrieving list of VMs...')
         vms = await get_vms(session, url, sid, exclude_list, include_list)
 
         task = asyncio.create_task(
@@ -206,6 +207,7 @@ async def export_vm(session, url, sid, vm, path):
 
     logger.info(f'[{vm.guest_name}] Starting VM export...')
     vm.export_task_id = await start_vm_export(session, url, sid, vm, path)
+    logger.debug(f'[{vm.guest_name}] Export task ID: {vm.export_task_id}')
 
     logger.info(f'[{vm.guest_name}] Waiting for export to finish...')
     await vm.wait_for_export()
