@@ -68,7 +68,7 @@ async def dsm_login(session, url, username, password):
                 'account': username,
                 'passwd': password,
                 'format': 'sid',
-                'session': 'vmm_export'
+                'session': 'dsm_info'
             }
     )
     return r['data']['sid']
