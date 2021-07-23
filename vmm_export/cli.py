@@ -120,7 +120,8 @@ async def update_vm_info(session, url, sid, vms, path):
                 vm.update(vm_data)
                 break
 
-    await vm.update_export_task(session, url, sid)
+    for vm in vms:
+        await vm.update_export_task(session, url, sid)
 
     for future in VirtualMachine.update_futures:
         future.set_result(None)
