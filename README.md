@@ -1,5 +1,7 @@
 # vmm-export
 
+[![Pulls from DockerHub](https://img.shields.io/docker/pulls/awkspace/vmm-export.svg)](https://hub.docker.com/r/awkspace/vmm-export)
+
 Synology has a virtual machine solution and several off-site backup solutions,
 but they don’t cooperate with one another for [some
 reason](https://www.synology.com/en-us/products/VMMPro_License_Pack). This
