@@ -204,9 +204,10 @@ async def export_vm(session, url, sid, vm, path):
     logger.info(f'[{vm.guest_name}] Deleting old export, if it exists...')
     await delete_old_export(session, url, sid, vm, path)
 
-    logger.info(f'[{vm.guest_name}] Powering off VM...')
-    await power_off_vm(session, url, sid, vm)
-    await vm.wait_for_status('shutdown')
+    if vm.status != 'shutdown':
+        logger.info(f'[{vm.guest_name}] Powering off VM...')
+        await power_off_vm(session, url, sid, vm)
+        await vm.wait_for_status('shutdown')
 
     logger.info(f'[{vm.guest_name}] Starting VM export...')
     vm.export_task_id = await start_vm_export(session, url, sid, vm, path)
