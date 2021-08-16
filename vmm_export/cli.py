@@ -267,6 +267,6 @@ def parse_args():
     p.add('--include', required=False, default='',
           help='Comma-separated list of VM names to include in exporting. '
           'Takes precedence over --exclude.')
-    p.add('--log-level', required=False, default='WARNING',
+    p.add('--log-level', required=False, default='INFO',
           help='Log verbosity.')
     return p.parse_args()

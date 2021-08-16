@@ -45,4 +45,4 @@ can use CLI flags or a configuration file to pass options too.
 |`VME_WORKERS`|`1`|No|How many VMs should be exported in parallel. Because exporting is a CPU intensive process, you should leave this to `1` unless you have a beefy DiskStation.|
 |`VME_EXCLUDE`|None|No|Comma-separated list of VM names to avoid exporting. By default, `vmm-export` will export all VMs.|
 |`VME_INCLUDE`|None|No|Comma-separated list of VM names to export. `vmm-export` will only export these VMs. **Note:** This takes precedence over the exclude list.|
-|`VME_LOG_LEVEL`|`WARNING`|No|Set logging level for `vmm-export`.|
+|`VME_LOG_LEVEL`|`INFO`|No|Set logging level for `vmm-export`.|
