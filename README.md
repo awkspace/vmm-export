@@ -41,7 +41,7 @@ can use CLI flags or a configuration file to pass options too.
 |`VME_PASSWORD`|None|Yes|The password to use for logging into the DSM.|
 |`VME_DSM_URL`|None|Yes|URL of the DSM, including port, e.g. `192.168.1.100:5000`.|
 |`VME_PATH`|None|Yes|The path to export VMs to, e.g. `/MyShareName/VMM`.|
-|`VME_CRON`|`0 0 * * * `|No|[Cron expression](https://www.freeformatter.com/cron-expression-generator-quartz.html) to schedule the export. Make sure to set `TZ` if you want this to be evaluated for [a different timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) than `UTC`.|
+|`VME_CRON`|`0 0 * * * `|No|[Cron expression](https://crontab.guru) to schedule the export. Make sure to set `TZ` if you want this to be evaluated for [a different timezone](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) than `UTC`.|
 |`VME_WORKERS`|`1`|No|How many VMs should be exported in parallel. Because exporting is a CPU intensive process, you should leave this to `1` unless you have a beefy DiskStation.|
 |`VME_EXCLUDE`|None|No|Comma-separated list of VM names to avoid exporting. By default, `vmm-export` will export all VMs.|
 |`VME_INCLUDE`|None|No|Comma-separated list of VM names to export. `vmm-export` will only export these VMs. **Note:** This takes precedence over the exclude list.|
