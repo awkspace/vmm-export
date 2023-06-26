@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
-import aiohttp
 import asyncio
-import configargparse
 import json
-from vmm_export import logger, dsm_request
-from vmm_export.virtual_machine import VirtualMachine
+
+import aiohttp
+import configargparse
+
+from vmm_export import dsm_request, logger
 from vmm_export.dsm_errors import dsm_errors
+from vmm_export.virtual_machine import VirtualMachine
 
 
 def main():
@@ -27,7 +29,9 @@ async def run():
         logger.info("Retrieving list of VMs...")
         vms = await get_vms(session, url, sid, exclude_list, include_list)
 
-        task = asyncio.create_task(check_vm_info(session, url, sid, vms, opts.path))
+        task = asyncio.create_task(
+            check_vm_info(session, url, sid, vms, opts.path)
+        )
         tasks.append(task)
 
         queue = asyncio.Queue()
@@ -233,7 +237,9 @@ async def report_export_error(vm):
         return  # Unable to find task_id, not an export error
     if not vm.export_task.get("data", {}).get("success", False):
         logger.error(f"Failed exporting {vm.guest_name}.")
-        error_code = vm.export_task.get("data", {}).get("task_info", {}).get("error")
+        error_code = (
+            vm.export_task.get("data", {}).get("task_info", {}).get("error")
+        )
         if error_code:
             logger.error(f"Task failed with error code {error_code}")
             reason = dsm_errors["SYNO.Virtualization"].get(error_code)
@@ -257,8 +263,16 @@ def parse_args():
         is_config_file=True,
         help="Path to configuration file.",
     )
-    p.add("--username", required=True, help="Username to use for logging into the DSM.")
-    p.add("--password", required=True, help="Password to use for logging into the DSM.")
+    p.add(
+        "--username",
+        required=True,
+        help="Username to use for logging into the DSM.",
+    )
+    p.add(
+        "--password",
+        required=True,
+        help="Password to use for logging into the DSM.",
+    )
     p.add(
         "--dsm-url",
         required=True,

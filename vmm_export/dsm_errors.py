@@ -32,8 +32,10 @@ dsm_errors = {
         700: "The storage is invalid.",
         900: "Failed to set a host to a virtual machine.",
         901: "The virtual machine does not have a host.",
-        902: "Failed to power on a virtual machine due to insufficient CPU " "threads.",
-        903: "Failed to power on a virtual machine due to insufficient " "memory.",
+        902: "Failed to power on a virtual machine due to insufficient CPU "
+        "threads.",
+        903: "Failed to power on a virtual machine due to insufficient "
+        "memory.",
         904: "The status of the virtual machine is online.",
         905: "MAC conflict.",
         906: "Failed to create virtual machine because the selected image is "
