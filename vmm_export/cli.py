@@ -236,8 +236,7 @@ async def report_export_error(vm):
             .get('error')
         if error_code:
             logger.error(f'Task failed with error code {error_code}')
-            reason = dsm_errors['SYNO.Virtualization.API.Guest.Action'] \
-                .get(error_code)
+            reason = dsm_errors['SYNO.Virtualization'].get(error_code)
             if reason:
                 logger.warning(f'Error: {reason}')
 
