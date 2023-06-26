@@ -4,7 +4,7 @@ import asyncio
 from vmm_export.cli import dsm_request
 
 
-class VirtualMachine():
+class VirtualMachine:
     update_futures = []
 
     def __init__(self, raw_info):
@@ -43,18 +43,18 @@ class VirtualMachine():
             return
         r = await dsm_request(
             session,
-            f'{url}/webapi/entry.cgi',
+            f"{url}/webapi/entry.cgi",
             params={
-                '_sid': sid,
-                'api': 'SYNO.Virtualization.API.Task.Info',
-                'version': '1',
-                'method': 'get',
-                'task_id': self.export_task_id
+                "_sid": sid,
+                "api": "SYNO.Virtualization.API.Task.Info",
+                "version": "1",
+                "method": "get",
+                "task_id": self.export_task_id,
             },
-            ignore_error=True
+            ignore_error=True,
         )
-        export_finished = r.get('data', {}).get('finish')
-        export_task_not_found = r.get('error', {}).get('code') == 1000
+        export_finished = r.get("data", {}).get("finish")
+        export_task_not_found = r.get("error", {}).get("code") == 1000
         if export_finished or export_task_not_found:
             self.export_task_id = None
             self.export_finished = True
