@@ -239,6 +239,7 @@ async def report_export_error(vm):
             reason = dsm_errors['SYNO.Virtualization'].get(error_code)
             if reason:
                 logger.warning(f'Error: {reason}')
+        logger.error(f'Full response from DSM: {json.dumps(vm)}')
 
 
 def raise_for_success(response):
